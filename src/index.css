@@ -1,0 +1,83 @@
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* Apply the new font globally */
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f4f7f6;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+
+/* --- MODERN FORM INPUTS --- */
+.modern-input {
+  width: 100%;
+  padding: 12px 15px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 8px; /* Rounded corners */
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.modern-input:focus {
+  border-color: #4A90E2;
+  outline: none;
+}
+
+/* --- MODERN BUTTONS --- */
+.modern-button {
+  background-color: #1a1a2e; /* Dark aesthetic from your references */
+  color: white;
+  padding: 12px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background-color 0.3s;
+}
+
+.modern-button:hover {
+  background-color: #303050;
+}
+
+/* --- MODERN TABLES (Dark Mode Header) --- */
+.modern-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  overflow: hidden; /* Keeps the corners rounded */
+}
+
+.modern-table thead {
+  background-color: #1f2937; /* Dark Gray */
+  color: white;
+}
+
+.modern-table th, .modern-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modern-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* --- CARD CONTAINERS --- */
+.modern-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
