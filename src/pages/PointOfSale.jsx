@@ -8,7 +8,7 @@ const PointOfSale = () => {
     const [cart, setCart] = useState([]); 
     const [message, setMessage] = useState({ text: '', type: '' });
 
-    const [customerInfo, setCustomerInfo] = useState({ customerName: '', customerContact: '', billingAddress: '', stateCode: 'MH', customerGstin: '' });
+    const [customerInfo, setCustomerInfo] = useState({ customerName: '', customerContact: '', billingAddress: '', stateCode: '', customerGstin: '' });
     const [selectedProductId, setSelectedProductId] = useState('');
     const [manualBarcode, setManualBarcode] = useState('');
 
@@ -66,7 +66,7 @@ const PointOfSale = () => {
         try {
             const response = await api.post('/sales', payload);
             setMessage({ text: `Sale Successful! Invoice ID: ${response.data.invoiceId}`, type: "success" });
-            setCart([]); setCustomerInfo({ customerName: '', customerContact: '', billingAddress: '', stateCode: 'MH', customerGstin: '' });
+            setCart([]); setCustomerInfo({ customerName: '', customerContact: '', billingAddress: '', stateCode: '', customerGstin: '' });
             downloadPdf(response.data.invoiceId);
         } catch (error) { setMessage({ text: error.response?.data?.message || "Checkout Failed.", type: "error" }); }
     };
@@ -127,7 +127,7 @@ const PointOfSale = () => {
 
                     <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#6B7280' }}>Or Search Master Catalog</label>
                     <select className="modern-input" value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)}>
-                        <option value="">-- Browse Categories --</option>
+                        <option value="">-- Browse Products --</option>
                         {products.filter(p => p.isActive).map(p => (
         <option key={p.id} value={p.id}>{p.name} (HSN: {p.hsnCode})</option>
     ))}
@@ -179,7 +179,7 @@ const PointOfSale = () => {
 
                 <div style={{ borderTop: '2px dashed #374151', paddingTop: '20px', marginTop: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', color: '#9CA3AF', marginBottom: '10px' }}><span>Taxable Subtotal:</span><span>₹{cartTotal.toLocaleString('en-IN')}</span></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', color: '#9CA3AF', marginBottom: '15px' }}><span>Est. Tax (Auto-Calc):</span><span>At Checkout</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', color: '#9CA3AF', marginBottom: '15px' }}><span>Total Tax (Auto-Calc):</span><span>At Checkout</span></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '26px', fontWeight: 'bold', marginBottom: '25px', color: '#10B981' }}><span>TOTAL:</span><span>₹{cartTotal.toLocaleString('en-IN')}</span></div>
                     
                     <button onClick={handleCheckout} disabled={cart.length === 0} className="modern-button" style={{ backgroundColor: cart.length === 0 ? '#374151' : '#2563EB', padding: '20px', fontSize: '18px', borderRadius: '8px' }}>
