@@ -169,7 +169,7 @@ const PointOfSale = () => {
             const res = await api.get(`/reports/download-invoice/${invoiceId}`, { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([res.data]));
             const link = document.createElement('a');
-            link.href = url; link.setAttribute('download', `TaxInvoice_${invoiceId}.pdf`);
+            link.href = url; link.setAttribute('download', `SALES_Invoice_${invoiceId}.pdf`);
             document.body.appendChild(link); link.click(); link.remove();
         } catch (err) { console.error("PDF Download failed."); }
     };
