@@ -53,22 +53,115 @@ const PointOfSale = () => {
 
     const handleRemoveFromCart = (index) => setCart(cart.filter((_, i) => i !== index));
 
+    // --- THE NEW FINTECH CHECKOUT FLOW ---
     const handleCheckout = async () => {
         if (cart.length === 0) return;
-        if (!window.confirm(`Finalize sale for ₹${cartTotal}?`)) return;
+        if (!window.confirm(`Initiate Secure Payment for ₹${cartTotal.toLocaleString('en-IN')}?`)) return;
 
-        setMessage({ text: '', type: '' });
+        setMessage({ text: 'Initializing Payment Gateway...', type: '' });
+
+        try {
+            // STEP 1: Handshake with Java to get a Razorpay Order ID
+            const orderRes = await api.post('/payments/create-order', { amount: cartTotal });
+            const { orderId, amount, currency, keyId } = orderRes.data;
+
+            // STEP 2: Configure the Razorpay Popup Window
+            const options = {
+                key: keyId, // Your Public Key from Java!
+                amount: amount, // Amount in paise
+                currency: currency,
+                name: "GST ERP Pvt Ltd",
+                description: "POS Retail Purchase",
+                order_id: orderId, // The secure Order ID from Java!
+                
+                // STEP 3: The "Success Callback" Function
+                // This function ONLY runs if the customer successfully types a credit card and pays!
+                handler: async function (response) {
+                    setMessage({ text: 'Payment Successful! Verifying signature...', type: 'success' });
+                    
+                    // We grab the 3 pieces of proof Razorpay just handed us
+                    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = response;
+
+                    // We build the final payload to save the actual sale in Postgres!
+                    const payload = {
+                        ...customerInfo,
+                        items: cart.map(item => ({ serialNo: item.serialNo, sellingPrice: item.sellingPrice })),
+                        
+                        // --- THE NEW PAYMENT FIELDS ---
+                        paymentMethod: "RAZORPAY_ONLINE",
+                        razorpayPaymentId: razorpay_payment_id,
+                        razorpayOrderId: razorpay_order_id,
+                        razorpaySignature: razorpay_signature
+                    };
+                    
+
+                    try {
+                        // Send the payload to Java. Java will verify the signature mathematically!
+                        const finalRes = await api.post('/sales', payload);
+                        
+                        setMessage({ text: `Sale Saved! Invoice ID: ${finalRes.data.invoiceId}`, type: "success" });
+                        setCart([]); 
+                        setCustomerInfo({ customerName: '', customerContact: '', billingAddress: '', stateCode: 'MH', customerGstin: '' });
+                        
+                        // Download the PDF Receipt
+                        downloadPdf(finalRes.data.invoiceId);
+                        
+                    } catch (error) {
+                        setMessage({ text: error.response?.data?.message || "Verification Failed! Transaction Cancelled.", type: "error" });
+                    }
+                },
+                
+                // Pre-fill the customer's details in the Razorpay popup if we have them!
+                prefill: {
+                    name: customerInfo.customerName || "Walk-in Customer",
+                    contact: customerInfo.customerContact || "9999999999"
+                },
+                theme: { color: "#2563EB" } // Match our app's blue button color!
+            };
+
+            // STEP 4: Physically open the Razorpay window on the screen!
+            const rzp = new window.Razorpay(options);
+            
+            // If the user clicks the "X" to close the popup without paying
+            rzp.on('payment.failed', function (response) {
+                setMessage({ text: "Payment Failed or Cancelled by User.", type: "error" });
+            });
+            
+            rzp.open();
+
+        } catch (error) {
+            setMessage({ text: error.response?.data?.message || "Failed to initialize payment gateway.", type: "error" });
+        }
+    };
+
+    const handleCashCheckout = async () => {
+        if (cart.length === 0) return;
+        if (!window.confirm(`Finalize CASH sale for ₹${cartTotal.toLocaleString('en-IN')}?`)) return;
+
+        setMessage({ text: 'Processing Cash Payment...', type: '' });
+
         const payload = {
             ...customerInfo,
-            items: cart.map(item => ({ serialNo: item.serialNo, sellingPrice: item.sellingPrice }))
+            items: cart.map(item => ({ serialNo: item.serialNo, sellingPrice: item.sellingPrice })),
+            paymentMethod: "CASH", // Explicitly tag this as Cash!
+            razorpayPaymentId: null,
+            razorpayOrderId: null,
+            razorpaySignature: null
         };
 
         try {
-            const response = await api.post('/sales', payload);
-            setMessage({ text: `Sale Successful! Invoice ID: ${response.data.invoiceId}`, type: "success" });
-            setCart([]); setCustomerInfo({ customerName: '', customerContact: '', billingAddress: '', stateCode: '', customerGstin: '' });
-            downloadPdf(response.data.invoiceId);
-        } catch (error) { setMessage({ text: error.response?.data?.message || "Checkout Failed.", type: "error" }); }
+            const finalRes = await api.post('/sales', payload);
+            setMessage({ text: `Sale Saved! Invoice ID: ${finalRes.data.invoiceId}`, type: "success" });
+            
+            // Clear the Cart & Customer Info
+            setCart([]); 
+            setCustomerInfo({ customerName: '', customerContact: '', billingAddress: '', stateCode: 'MH', customerGstin: '' });
+            
+            // Print the Receipt
+            downloadPdf(finalRes.data.invoiceId);
+        } catch (error) {
+            setMessage({ text: error.response?.data?.message || "Cash Checkout Failed.", type: "error" });
+        }
     };
 
     const downloadPdf = async (invoiceId) => {
@@ -182,13 +275,28 @@ const PointOfSale = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', color: '#9CA3AF', marginBottom: '15px' }}><span>Total Tax (Auto-Calc):</span><span>At Checkout</span></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '26px', fontWeight: 'bold', marginBottom: '25px', color: '#10B981' }}><span>TOTAL:</span><span>₹{cartTotal.toLocaleString('en-IN')}</span></div>
                     
-                    <button onClick={handleCheckout} disabled={cart.length === 0} className="modern-button" style={{ backgroundColor: cart.length === 0 ? '#374151' : '#2563EB', padding: '20px', fontSize: '18px', borderRadius: '8px' }}>
-                        💳 CHECKOUT & PRINT
-                    </button>
+                    <div style={{ display: 'flex', gap: '15px', flexDirection: 'column' }}>
+                        <button 
+                            onClick={handleCashCheckout} 
+                            disabled={cart.length === 0} 
+                            className="modern-button" 
+                            style={{ backgroundColor: cart.length === 0 ? '#374151' : '#10B981', padding: '15px', fontSize: '16px', borderRadius: '8px' }}>
+                            💵 PAY WITH CASH AND PRINT INVOICE
+                        </button>
+
+                        <button 
+                            onClick={handleCheckout} // Your original Razorpay function!
+                            disabled={cart.length === 0} 
+                            className="modern-button" 
+                            style={{ backgroundColor: cart.length === 0 ? '#374151' : '#2563EB', padding: '15px', fontSize: '16px', borderRadius: '8px' }}>
+                            💳 PAY ONLINE (CARD) AND PRINT INVOICE
+                        </button>
+                    </div>
+                </div>
                 </div>
             </div>
 
-        </div>
+        
     );
 };
 
