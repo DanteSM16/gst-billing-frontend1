@@ -132,7 +132,7 @@ const AdminDashboard = () => {
 
                         <label style={{ fontSize: '13px', fontWeight: '600' }}>Assign to Branch</label>
                         <select className="modern-input" value={newUser.storeId} onChange={e => setNewUser({...newUser, storeId: e.target.value})}>
-                            <option value="">-- System Wide (Finance) --</option>
+                            <option value=""> System Wide (Finance/Developer) </option>
                             {/* Notice we added .filter(s => s.isActive) so you can't assign staff to closed stores! */}
                             {stores.filter(s => s.isActive).map(store => (
                                 <option key={store.id} value={store.id}>{store.storeName} ({store.stateCode})</option>
@@ -149,7 +149,7 @@ const AdminDashboard = () => {
                 
                 {/* STORE TABLE */}
                 <div className="modern-card" style={{ flex: 1 }}>
-                    <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Active Branches Network</h3>
+                    <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Active Branches</h3>
                     <table className="modern-table">
                         <thead>
                             {/* Added ID Header */}
